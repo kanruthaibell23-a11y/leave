@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สมุดคุมวันลา</title>
+<script src="config.js"></script>
+<script src="api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#f4f6fa; --card:#fff; --ink:#1d2433; --mute:#6b7488; --line:#dde2ec; --pri:#2457c5; --ok:#1c8a4b; --bad:#c43030; --warn:#b7791f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--ink); font-size:16px; }
+  header { background:var(--pri); color:#fff; padding:14px 20px; }
+  header h1 { margin:0; font-size:20px; } header small { opacity:.85; }
+  main { max-width:960px; margin:0 auto; padding:16px; }
+  .tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+  .tab { border:1px solid var(--line); background:#fff; padding:8px 16px; border-radius:20px; cursor:pointer; font:inherit; }
+  .tab.on { background:var(--pri); color:#fff; border-color:var(--pri); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:12px; }
+  h3 { margin:14px 0 2px; font-size:16px; color:var(--pri); } h3:first-child { margin-top:0; }
+  label { display:block; font-size:14px; color:var(--mute); margin:10px 0 4px; }
+  input, textarea, select { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; background:#fff; }
+  input[readonly] { background:#f0f2f7; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:640px){ .row { grid-template-columns:1fr; } }
+  button.btn { border:0; padding:9px 16px; border-radius:8px; font:inherit; cursor:pointer; background:var(--pri); color:#fff; }
+  button.btn.ghost { background:#fff; color:var(--pri); border:1px solid var(--pri); }
+  button.btn.bad { background:#fff; color:var(--bad); border:1px solid var(--bad); }
+  button.btn.sm { padding:4px 10px; font-size:14px; }
+  button.btn:disabled { opacity:.5; cursor:default; }
+  .meta { color:var(--mute); font-size:14px; margin:4px 0; }
+  .hint { color:var(--mute); font-size:13px; margin:2px 0 0; }
+  .actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+  .msg { padding:10px 14px; border-radius:8px; margin-bottom:12px; background:#fbe4e4; color:var(--bad); }
+  .okmsg { padding:14px; border-radius:8px; background:#dff4e7; color:#145c32; }
+  .info { padding:10px 14px; border-radius:8px; background:#eef3ff; color:#1b3d8f; margin-top:10px; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:13px; background:#eef1f8; }
+  .badge.CANCELLED { background:#fbe4e4; color:var(--bad); }
+  .badge.ACTIVE { background:#dff4e7; color:var(--ok); }
+  table { width:100%; border-collapse:collapse; font-size:15px; }
+  th, td { padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { color:var(--mute); font-weight:600; font-size:13px; }
+  td.n, th.n { text-align:right; white-space:nowrap; }
+  .scroll { overflow-x:auto; }
+  .sub { background:#f8f9fc; }
+  .lv { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:8px 0; border-bottom:1px dashed var(--line); }
+  .empty { text-align:center; color:var(--mute); padding:24px; }
+  .big { font-size:26px; font-weight:600; color:var(--pri); }
+  .stat { display:flex; gap:24px; flex-wrap:wrap; margin:6px 0 10px; }
+  .stat div span { display:block; font-size:13px; color:var(--mute); }
+</style>
+</head>
+<body>
+<header>
+  <h1>สมุดคุมวันลา</h1>
+  <small id="org">สำนักงานยุติธรรมจังหวัดชลบุรี</small><small style="display:block">พนักงานราชการ · ลูกจ้างชั่วคราว · จ้างเหมาบริการ</small>
+</header>
+<main>
+  <div id="err"></div>
+  <div class="tabs" id="mainTabs">
+    <button class="tab on" data-t="new">ยื่น/บันทึกใบลา</button>
+    <button class="tab" data-t="bal">ยอดวันลา</button>
+    <button class="tab" data-t="adm">แอดมิน</button>
+  </div>
+
+  <!-- ===== บันทึกใบลา ===== -->
+  <section id="p-new" class="card">
+    <div id="formArea">
+      <h3>เจ้าหน้าที่</h3>
+      <label>เลือกชื่อ – ตำแหน่ง *</label>
+      <select id="n_staff"><option value="">— เลือกเจ้าหน้าที่ —</option></select>
+      <div id="staffInfo" class="info" style="display:none"></div>
+      <p class="hint" id="noStaff" style="display:none">ยังไม่มีรายชื่อ หรือไม่พบชื่อของคุณ ให้แจ้งแอดมินเพิ่มชื่อในแท็บ "แอดมิน"</p>
+
+      <label>ประเภทการลา / แบบฟอร์ม *</label>
+      <select id="n_ltype"></select>
+      <div id="rowReason" style="display:none"><label>เนื่องจาก (เหตุผลการลา)</label><input id="n_reason" placeholder="เช่น เป็นไข้หวัดใหญ่ / ไปติดต่อราชการ"></div>
+      <div id="vacInfo" class="info" style="display:none"></div>
+
+      <h3>วันที่และช่วงเวลาที่ลา</h3>
+      <div class="row">
+        <div><label>วันที่เขียนใบลา</label><input type="date" id="n_write"></div>
+        <div></div>
+        <div><label>ขอลาตั้งแต่วันที่ *</label><input type="date" id="n_start"></div>
+        <div><label>ถึงวันที่ *</label><input type="date" id="n_end"></div>
+        <div><label id="lblSp">วันแรก (ลาเต็มวัน/ครึ่งวัน)</label>
+          <select id="n_sp"><option value="FULL">เต็มวัน</option><option value="AM">ครึ่งวันเช้า</option><option value="PM">ครึ่งวันบ่าย</option></select></div>
+        <div id="wrapEp"><label>วันสุดท้าย (ลาเต็มวัน/ครึ่งวัน)</label>
+          <select id="n_ep"><option value="FULL">เต็มวัน</option><option value="AM">ครึ่งวันเช้า</option><option value="PM">ครึ่งวันบ่าย</option></select></div>
+        <div><label>มีกำหนด (วันทำการ)</label><input id="n_days" readonly placeholder="คำนวณอัตโนมัติ"></div>
+        <div><label>ติดต่อข้าพเจ้าได้ที่ (ระหว่างลา)</label><input id="n_contact" placeholder="ที่อยู่ / เบอร์โทร"></div>
+      </div>
+
+<div id="secDelegate">
+      <h3>มอบหมายงาน</h3>
+      <div class="row">
+        <div><label>ให้ ... เป็นผู้ดำเนินการแทน</label><input id="n_delegate"></div>
+      </div>
+      </div>
+
+      <h3>ชื่อผู้ลงนามที่จะพิมพ์ในใบลา</h3>
+      <p class="hint">ระบบพิมพ์ชื่อให้เท่านั้น หัวหน้าและผู้อำนวยการเซ็นบนกระดาษ ไม่ต้องอนุมัติในระบบ (เว้นว่างได้)</p>
+      <div class="row">
+        <div><label>หัวหน้ากลุ่ม/ฝ่าย – ชื่อ</label><input id="a_head_n"></div>
+        <div><label>หัวหน้ากลุ่ม/ฝ่าย – ตำแหน่ง (บรรทัดที่ 1)</label><input id="a_head_p"></div>
+        <div></div>
+        <div><label>หัวหน้ากลุ่ม/ฝ่าย – ตำแหน่ง บรรทัดที่ 2 (ถ้ามี)</label><input id="a_head_p2" placeholder="เช่น หัวหน้ากลุ่มพัฒนาและส่งเสริมระบบงานยุติธรรม"></div>
+        <div><label>ผู้ตรวจสอบ – ชื่อ</label><input id="a_insp_n"></div>
+        <div><label>ผู้ตรวจสอบ – ตำแหน่ง</label><input id="a_insp_p"></div>
+        <div class="gen-only"><label>ผู้รับรอง – ชื่อ</label><input id="a_cert_n"></div>
+        <div class="gen-only"><label>ผู้รับรอง – ตำแหน่ง (บรรทัดที่ 1)</label><input id="a_cert_p"></div>
+        <div class="gen-only"></div>
+        <div class="gen-only"><label>ผู้รับรอง – ตำแหน่ง บรรทัดที่ 2 (ถ้ามี)</label><input id="a_cert_p2" placeholder="เช่น หัวหน้ากลุ่มพัฒนาและส่งเสริมระบบงานยุติธรรม"></div>
+        <div><label>ผู้อำนวยการ/ผู้รักษาราชการแทน – ชื่อ</label><input id="a_dir_n"></div>
+        <div><label>ผู้อำนวยการ/ผู้รักษาราชการแทน – ตำแหน่ง (บรรทัดที่ 1)</label><input id="a_dir_p" placeholder="เช่น ผู้อำนวยการสำนักงานยุติธรรมจังหวัดชลบุรี · หรือ นักวิชาการยุติธรรมชำนาญการ รักษาราชการแทน"></div>
+        <div></div>
+        <div><label>ตำแหน่ง บรรทัดที่ 2 (ถ้ามี)</label><input id="a_dir_p2" placeholder="เช่น ผู้อำนวยการสำนักงานยุติธรรมจังหวัดชลบุรี (กรณีรักษาราชการแทน)"></div>
+      </div>
+      <div class="actions"><button class="btn" id="btnSubmit">บันทึกใบลา</button></div>
+    </div>
+    <div id="doneArea" style="display:none"></div>
+  </section>
+
+  <!-- ===== ยอดวันลา (ทุกคนดูได้) ===== -->
+  <section id="p-bal" style="display:none">
+    <div class="card">
+      <div class="row">
+        <div><label>เจ้าหน้าที่</label><select id="b_staff"><option value="">— เลือกเจ้าหน้าที่ —</option></select></div>
+        <div><label>ปีงบประมาณ (พ.ศ.)</label><input id="b_fy" type="number" min="2500" max="2700"></div>
+      </div>
+      <div class="actions"><button class="btn" id="btnBal">ดูยอดวันลา</button></div>
+    </div>
+    <div id="balOut"></div>
+  </section>
+
+  <!-- ===== แอดมิน ===== -->
+  <section id="p-adm" style="display:none">
+    <div class="card" id="admLogin">
+      <label>รหัสแอดมิน (adminPin ในชีต Config)</label>
+      <input id="adm_pin" type="password" autocomplete="off" style="max-width:260px">
+      <div class="actions"><button class="btn" id="btnAdm">เข้าสู่ระบบแอดมิน</button></div>
+    </div>
+    <div id="admArea" style="display:none">
+      <div class="tabs">
+        <button class="tab on" data-s="led">สมุดคุม (ยอดรายคน)</button>
+        <button class="tab" data-s="stf">จัดการรายชื่อเจ้าหน้าที่</button>
+        <button class="tab" id="btnOut" style="margin-left:auto">ออกจากระบบแอดมิน</button>
+      </div>
+      <div id="s-led">
+        <div class="card">
+          <div class="row">
+            <div><label>ปีงบประมาณ (พ.ศ.)</label><input id="l_fy" type="number" min="2500" max="2700"></div>
+            <div><label>ประเภทบุคลากร</label><select id="l_type"><option value="">ทั้งหมด</option><option value="GOV_EMP">พนักงานราชการ</option><option value="TEMP">ลูกจ้างชั่วคราว</option><option value="CONTRACT">จ้างเหมาบริการ</option></select></div>
+          </div>
+          <div class="actions"><button class="btn" id="btnLed">โหลดสมุดคุม</button>
+            <span class="hint">ปีงบประมาณ = 1 ต.ค. – 30 ก.ย.</span></div>
+        </div>
+        <div id="ledOut"></div>
+      </div>
+      <div id="s-stf" style="display:none">
+        <div class="card">
+          <h3 id="stfTitle">เพิ่มเจ้าหน้าที่</h3>
+          <input type="hidden" id="s_id">
+          <div class="row">
+            <div><label>ประเภทบุคลากร *</label><select id="s_type"><option value="GOV_EMP">พนักงานราชการ</option><option value="TEMP">ลูกจ้างชั่วคราว</option><option value="CONTRACT">จ้างเหมาบริการ</option></select></div>
+            <div><label>ชื่อ-สกุล *</label><input id="s_name"></div>
+            <div><label>ตำแหน่ง</label><input id="s_pos"></div>
+            <div><label>กลุ่มงาน/งาน</label><input id="s_group"></div>
+            <div><label>สังกัด</label><input id="s_aff"></div>
+            <div><label>หัวหน้ากลุ่ม/ฝ่าย – ชื่อ (เติมให้ตอนบันทึกใบลา)</label><input id="s_hn"></div>
+            <div><label>หัวหน้ากลุ่ม/ฝ่าย – ตำแหน่ง (บรรทัดที่ 1)</label><input id="s_hp"></div>
+            <div><label>หัวหน้ากลุ่ม/ฝ่าย – ตำแหน่ง บรรทัดที่ 2 (ถ้ามี)</label><input id="s_hp2"></div>
+            <div style="grid-column:1/-1"><h3 style="margin:8px 0 0">สิทธิลาพักผ่อน (พนักงานราชการ/ลูกจ้างชั่วคราว)</h3><p class="hint">ใช้ในแบบใบลาพักผ่อน: สะสม + สิทธิประจำปี = รวม · ค่าเหล่านี้ใช้กับปีงบประมาณที่ระบุเท่านั้น</p></div>
+            <div><label>วันลาพักผ่อนสะสมยกมา (วันทำการ)</label><input id="s_vc" type="number" min="0" step="0.5" placeholder="เว้นว่างถ้าไม่มี"></div>
+            <div><label>ลาพักผ่อนที่ใช้ไปแล้วก่อนใช้ระบบ (วัน)</label><input id="s_vu" type="number" min="0" step="0.5" placeholder="เว้นว่างถ้าไม่มี"></div>
+            <div><label>ของปีงบประมาณ (พ.ศ.) – ใช้กับสะสม/ใช้ไปแล้ว</label><input id="s_vfy" type="number" min="2500" max="2700" placeholder="เช่น 2570"></div>
+            <div><label>สิทธิลาพักผ่อนต่อปีของคนนี้ (วัน)</label><input id="s_vq" type="number" min="0" step="0.5" placeholder="เว้นว่าง = ค่าเริ่มต้น 10"></div>
+            <div style="grid-column:1/-1"><h3 style="margin:8px 0 0">ลาป่วย / ลากิจ / ลาคลอด ที่ใช้ไปแล้วก่อนใช้ระบบ (ลูกจ้างชั่วคราว)</h3><p class="hint">ใช้เติมช่อง "ลามาแล้ว" ในตารางสถิติของใบลา · เว้นว่างถ้าไม่มี</p></div>
+            <div><label>ลาป่วย (วัน)</label><input id="s_ps" type="number" min="0" step="0.5"></div>
+            <div><label>ลากิจส่วนตัว (วัน)</label><input id="s_pp" type="number" min="0" step="0.5"></div>
+            <div><label>ลาคลอดบุตร (วัน)</label><input id="s_pm" type="number" min="0" step="0.5"></div>
+            <div><label>ของปีงบประมาณ (พ.ศ.)</label><input id="s_pfy" type="number" min="2500" max="2700" placeholder="เช่น 2570"></div>
+            <div><label>ลามาแล้ว (ยอดยกมาก่อนใช้ระบบ) วัน</label><input id="s_carry" type="number" min="0" step="0.5" placeholder="เว้นว่างถ้าไม่มี"></div>
+            <div><label>ของปีงบประมาณ (พ.ศ.)</label><input id="s_cfy" type="number" min="2500" max="2700" placeholder="เช่น 2570"></div>
+          </div>
+          <div class="actions">
+            <button class="btn" id="btnSaveStaff">บันทึก</button>
+            <button class="btn ghost" id="btnClearStaff">ล้างฟอร์ม</button>
+          </div>
+        </div>
+        <div class="card scroll" id="stfList"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+
+const $ = id => document.getElementById(id);
+const MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtD = n => Math.round(Number(n || 0) * 10) / 10;
+function thDate(iso) { if (!iso) return '-'; const p = iso.slice(0,10).split('-'); return (+p[2]) + ' ' + MONTHS[p[1]-1] + ' ' + (+p[0]+543); }
+function partTh(p) { return p === 'AM' ? ' (ครึ่งวันเช้า)' : p === 'PM' ? ' (ครึ่งวันบ่าย)' : ''; }
+function fyBEof(iso) { const p = iso.split('-').map(Number); return (p[1] >= 10 ? p[0] + 1 : p[0]) + 543; }
+function showErr(m) { $('err').innerHTML = m ? '<div class="msg">' + esc((m && m.message) || m) + '</div>' : ''; }
+const fail = e => { showErr(e); };
+function rpc(fn, ...args) { return new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...args)); }
+
+const TYPES = { GOV_EMP: 'พนักงานราชการ', TEMP: 'ลูกจ้างชั่วคราว', CONTRACT: 'จ้างเหมาบริการ' };
+const TYPE_KEYS = ['GOV_EMP', 'TEMP', 'CONTRACT'];                 // ลำดับแสดงผล
+const typeTh = t => TYPES[t] || TYPES.CONTRACT;
+function staffOptions(list) {
+  const one = s => '<option value="' + esc(s.id) + '">' + esc(s.name) + (s.position ? ' — ' + esc(s.position) : '') + '</option>';
+  return TYPE_KEYS.map(k => { const g = list.filter(s => (s.type || 'CONTRACT') === k); return g.length ? '<optgroup label="' + esc(TYPES[k]) + '">' + g.map(one).join('') + '</optgroup>' : ''; }).join('');
+}
+
+/* ---------- ส่งสรุปการลาเข้า LINE (กลุ่ม) : เปิด LINE ให้เลือกกลุ่มแล้วกดส่ง ไม่ต้องใช้บอท/ไม่กินโควตา ---------- */
+const MSG = {};
+function leaveMsg(x, total, fy) {
+  const same = x.startDate === x.endDate;
+  const L = ['📋 แจ้งการลา', x.name + (x.staffType ? ' (' + typeTh(x.staffType) + ')' : ''),
+    'ลา ' + thDate(x.startDate) + partTh(x.startPart) + (same ? '' : ' – ' + thDate(x.endDate) + partTh(x.endPart)) + ' (' + fmtD(x.days) + ' วัน)'];
+  if (x.leaveType && x.leaveType !== 'GENERAL') L.splice(2, 0, 'ประเภท: ' + lvName(x.leaveType));
+  if (x.delegateName) L.push('ผู้ปฏิบัติงานแทน: ' + x.delegateName);
+  if (total != null) L.push('ลาสะสมปีงบประมาณ ' + fy + ': ' + fmtD(total) + ' วัน');
+  if (x.vacRemaining != null) L.push('สิทธิลาพักผ่อนคงเหลือ: ' + fmtD(x.vacRemaining) + ' วัน');
+  return L.join('\n');
+}
+function shareLine(key) { window.open('https://line.me/R/msg/text/?' + encodeURIComponent(MSG[key] || ''), '_blank'); }
+function copyMsg(key, btn) {
+  const t = MSG[key] || '';
+  const done = () => { if (btn) { const o = btn.textContent; btn.textContent = 'คัดลอกแล้ว ✓'; setTimeout(() => btn.textContent = o, 1500); } };
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { prompt('คัดลอกข้อความนี้', t); } document.body.removeChild(ta); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
+}
+let DEF = null, STAFF = [], ADM = null;
+
+/* ---------- แท็บ ---------- */
+document.querySelectorAll('#mainTabs .tab').forEach(b => b.onclick = () => {
+  showErr('');
+  document.querySelectorAll('#mainTabs .tab').forEach(x => x.classList.toggle('on', x === b));
+  ['new','bal','adm'].forEach(k => $('p-' + k).style.display = k === b.dataset.t ? '' : 'none');
+});
+
+/* ---------- เริ่มต้น ---------- */
+(async function init() {
+  try {
+    DEF = await rpc('getDefaults');
+    $('org').textContent = DEF.orgName || $('org').textContent;
+    $('n_write').value = DEF.today;
+    $('a_insp_n').value = DEF.inspectorName; $('a_insp_p').value = DEF.inspectorPosition;
+    $('a_cert_n').value = DEF.certifierName; $('a_cert_p').value = DEF.certifierPosition; $('a_cert_p2').value = DEF.certifierPosition2 || '';
+    $('a_dir_n').value = DEF.directorName; $('a_dir_p').value = DEF.directorPosition; $('a_dir_p2').value = DEF.directorPosition2 || '';
+    $('b_fy').value = DEF.fyBE; $('l_fy').value = DEF.fyBE;
+    await loadStaff();
+    try { const id = localStorage.getItem('leave_staff_v2'); if (id && STAFF.some(s => s.id === id)) { $('n_staff').value = id; $('b_staff').value = id; onStaff(); } } catch (e) {}
+  } catch (e) { fail(e); }
+})();
+
+async function loadStaff() {
+  STAFF = await rpc('getStaffList');
+  const opts = staffOptions(STAFF);
+  ['n_staff','b_staff'].forEach(k => { const cur = $(k).value; $(k).innerHTML = '<option value="">— เลือกเจ้าหน้าที่ —</option>' + opts; $(k).value = cur; });
+  $('noStaff').style.display = STAFF.length ? 'none' : '';
+}
+
+/* ---------- ฟอร์มบันทึกใบลา ---------- */
+
+function curStaff() { return STAFF.find(s => s.id === $('n_staff').value); }
+let CUR = null;                                    // ยอด/สิทธิของเจ้าหน้าที่ที่เลือก (ตามปีงบประมาณของวันที่ลา)
+const isVac = () => $('n_ltype').value === 'VACATION';
+const FORM_LV = ['SICK', 'PERSONAL', 'MATERNITY'];
+const lvName = t => (DEF && DEF.leaveTypes && DEF.leaveTypes[t]) || t;
+function fillLtype() {                                   // ตัวเลือกประเภทการลา ตามประเภทบุคลากร (ตามแบบฟอร์มที่มี)
+  const s = curStaff(), allowed = (s && DEF.allowedLeaves[s.type || 'CONTRACT']) || [];
+  const sel = $('n_ltype');
+  sel.innerHTML = (allowed.length > 1 ? '<option value="">— เลือกประเภทการลา —</option>' : '') + allowed.map(t => '<option value="' + t + '">' + esc(lvName(t)) + '</option>').join('');
+  sel.value = allowed.length === 1 ? allowed[0] : '';
+}
+function applyLtype() {
+  const t = $('n_ltype').value;
+  $('rowReason').style.display = FORM_LV.indexOf(t) > -1 ? '' : 'none';
+  renderVacInfo();
+}
+function renderVacInfo() {
+  const el = $('vacInfo');
+  if (!isVac() || !CUR || !CUR.vac || !curStaff()) { el.style.display = 'none'; return; }
+  const v = CUR.vac, d = Number($('n_days').value || 0);
+  el.style.display = '';
+  el.innerHTML = '<b>สิทธิลาพักผ่อน ปีงบประมาณ ' + CUR.fyBE + '</b><br>สะสม ' + fmtD(v.carry) + ' + สิทธิปีนี้ ' + fmtD(v.quota) + ' = รวม ' + fmtD(v.total) +
+    ' วัน · ใช้ไปแล้ว ' + fmtD(v.used) + ' · คงเหลือ <b>' + fmtD(v.remaining) + '</b> วัน' +
+    (d > v.remaining ? '<br><span style="color:#b7791f">⚠ ครั้งนี้ลา ' + fmtD(d) + ' วัน เกินสิทธิคงเหลือ ' + fmtD(v.remaining) + ' วัน (ยังบันทึกได้ ให้ตรวจสอบกับแอดมิน)</span>' : '');
+}
+async function refreshCur() {
+  const s = curStaff(); if (!s) { CUR = null; renderVacInfo(); return; }
+  const fy = $('n_start').value ? fyBEof($('n_start').value) : DEF.fyBE;
+  if (CUR && CUR.staffId === s.id && CUR.fyBE === fy) { renderVacInfo(); return; }
+  try { const b = await rpc('listByStaff', s.id, fy); b.staffId = s.id; CUR = b; } catch (e) { CUR = null; }
+  renderVacInfo();
+}
+$('n_ltype').onchange = applyLtype;
+async function onStaff() {
+  const s = curStaff();
+  if (!s) { $('staffInfo').style.display = 'none'; return; }
+  try { localStorage.setItem('leave_staff_v2', s.id); } catch (e) {}
+  if (s.headName) { $('a_head_n').value = s.headName; $('a_head_p').value = s.headPosition || ''; $('a_head_p2').value = s.headPosition2 || ''; }
+  else { $('a_head_n').value = ''; $('a_head_p').value = ''; $('a_head_p2').value = ''; }
+  fillLtype(); applyLtype();
+  CUR = null; refreshCur();
+  $('staffInfo').style.display = '';
+  $('staffInfo').textContent = [typeTh(s.type), s.position, s.group, s.affiliation].filter(Boolean).join(' · ');
+  try {
+    const b = await rpc('listByStaff', s.id, DEF.fyBE);
+    $('staffInfo').innerHTML = esc([typeTh(s.type), s.position, s.group, s.affiliation].filter(Boolean).join(' · ')) +
+      '<br><b>ลาสะสมปีงบประมาณ ' + DEF.fyBE + ': ' + fmtD(b.total) + ' วัน</b> (' + b.count + ' ครั้ง' + (b.carry ? ', รวมยอดยกมา ' + fmtD(b.carry) : '') + ')';
+  } catch (e) {}
+}
+$('n_staff').onchange = onStaff;
+
+function calc() {
+  const s = $('n_start').value, e = $('n_end').value;
+  const same = !!s && s === e;
+  $('wrapEp').style.display = same ? 'none' : '';
+  $('lblSp').textContent = same ? 'ช่วงเวลาที่ลา' : 'วันแรก (ลาเต็มวัน/ครึ่งวัน)';
+  if (!s || !e) return;
+  rpc('calcDays', s, e, $('n_sp').value, same ? $('n_sp').value : $('n_ep').value).then(n => { $('n_days').value = n; refreshCur(); }).catch(fail);
+}
+$('n_start').onchange = () => { if (!$('n_end').value || $('n_end').value < $('n_start').value) $('n_end').value = $('n_start').value; calc(); };
+$('n_end').onchange = calc; $('n_sp').onchange = calc; $('n_ep').onchange = calc;
+
+$('btnSubmit').onclick = async () => {
+  showErr('');
+  const f = {
+    staffId: $('n_staff').value, leaveType: $('n_ltype').value, reason: $('n_reason').value, writeDate: $('n_write').value,
+    startDate: $('n_start').value, endDate: $('n_end').value, startPart: $('n_sp').value, endPart: $('n_ep').value,
+    contact: $('n_contact').value, delegateName: $('n_delegate').value,
+    headName: $('a_head_n').value, headPosition: $('a_head_p').value, headPosition2: $('a_head_p2').value,
+    inspectorName: $('a_insp_n').value, inspectorPosition: $('a_insp_p').value,
+    certifierName: $('a_cert_n').value, certifierPosition: $('a_cert_p').value, certifierPosition2: $('a_cert_p2').value,
+    directorName: $('a_dir_n').value, directorPosition: $('a_dir_p').value, directorPosition2: $('a_dir_p2').value
+  };
+  if (!f.staffId) return showErr('กรุณาเลือกเจ้าหน้าที่');
+  if (!f.leaveType) return showErr('กรุณาเลือกประเภทการลา');
+  $('btnSubmit').disabled = true;
+  try {
+    const r = await rpc('submitLeave', f);
+    const st = curStaff() || {};
+    MSG.__new = leaveMsg({ name: st.name, staffType: st.type, startDate: f.startDate, endDate: f.endDate, startPart: f.startPart,
+      endPart: f.startDate === f.endDate ? f.startPart : f.endPart, days: r.days, delegateName: f.delegateName,
+      leaveType: f.leaveType, vacRemaining: r.leaveType === 'VACATION' && r.vac ? r.vac.remaining : null }, r.total, r.fyBE);
+    $('formArea').style.display = 'none'; $('doneArea').style.display = '';
+    $('doneArea').innerHTML = '<div class="okmsg"><b>บันทึกใบลาเรียบร้อยแล้ว</b><br>ลาครั้งนี้ ' + fmtD(r.days) + ' วันทำการ · ลาสะสมปีงบประมาณ ' + r.fyBE + ' รวม <b>' + fmtD(r.total) + '</b> วัน' + (r.leaveType === 'VACATION' && r.vac ? '<br>สิทธิลาพักผ่อนคงเหลือ <b>' + fmtD(r.vac.remaining) + '</b> วัน (จากสิทธิรวม ' + fmtD(r.vac.total) + ')' : '') + '</div>' +
+      '<div class="info" style="white-space:pre-line">' + esc(MSG.__new) + '</div>' +
+      '<div class="actions"><button class="btn" onclick="printForm(\'' + r.id + '\')">พิมพ์ฟอร์ม</button>' +
+      '<button class="btn" style="background:#06c755" onclick="shareLine(\'__new\')">ส่งเข้า LINE กลุ่ม</button>' +
+      '<button class="btn ghost" onclick="copyMsg(\'__new\', this)">คัดลอกข้อความ</button>' +
+      '<button class="btn ghost" onclick="newAgain()">บันทึกใบลาใหม่</button></div>';
+  } catch (e) { fail(e); }
+  $('btnSubmit').disabled = false;
+};
+function newAgain() {
+  ['n_start','n_end','n_days','n_contact','n_delegate','n_reason'].forEach(k => $(k).value = '');
+  $('n_sp').value = 'FULL'; $('n_ep').value = 'FULL'; $('n_write').value = DEF.today; calc();
+  $('doneArea').style.display = 'none'; $('formArea').style.display = ''; onStaff();
+}
+function printForm(id) { window.open('print.html?id=' + encodeURIComponent(id), '_blank'); }
+
+/* ---------- ยอดวันลา ---------- */
+function byTypeText(bt) {                                   // เช่น "ลาป่วย 4.5 · ลากิจส่วนตัว 1 วัน"
+  const parts = Object.keys(bt || {}).filter(k => Number(bt[k]) > 0).map(k => lvName(k) + ' ' + fmtD(bt[k]));
+  return parts.length ? parts.join(' · ') + ' วัน' : 'ยังไม่มีวันลาในปีนี้';
+}
+function leaveRow(x, adm) {
+  MSG[x.id] = leaveMsg(x);
+  return '<div class="lv"><div>' + esc(thDate(x.startDate)) + esc(partTh(x.startPart)) + ' – ' + esc(thDate(x.endDate)) + esc(partTh(x.endPart)) +
+    ' · <b>' + fmtD(x.days) + ' วัน</b> ' + (x.leaveType && x.leaveType !== 'GENERAL' ? '<span class="badge">' + esc(lvName(x.leaveType)) + '</span> ' : '') + '<span class="badge ' + esc(x.status) + '">' + (x.status === 'CANCELLED' ? 'ยกเลิก' : 'นับในยอด') + '</span>' +
+    '<div class="meta">บันทึก ' + esc(thDate(x.createdAt)) + (x.delegateName ? ' · ผู้ปฏิบัติงานแทน: ' + esc(x.delegateName) : '') + '</div></div>' +
+    '<div class="actions" style="margin:0"><button class="btn ghost sm" onclick="printForm(\'' + x.id + '\')">พิมพ์ฟอร์ม</button>' +
+    '<button class="btn ghost sm" onclick="shareLine(\'' + x.id + '\')">ส่ง LINE</button>' +
+    (adm ? (x.status === 'CANCELLED'
+      ? '<button class="btn ghost sm" onclick="setLv(\'' + x.id + '\',\'ACTIVE\')">คืนสถานะ</button>'
+      : '<button class="btn bad sm" onclick="setLv(\'' + x.id + '\',\'CANCELLED\')">ยกเลิกใบลา</button>') : '') + '</div></div>';
+}
+$('btnBal').onclick = async () => {
+  showErr('');
+  if (!$('b_staff').value) return showErr('กรุณาเลือกเจ้าหน้าที่');
+  $('balOut').innerHTML = '<div class="empty">กำลังโหลด...</div>';
+  try {
+    const b = await rpc('listByStaff', $('b_staff').value, $('b_fy').value);
+    $('balOut').innerHTML = '<div class="card"><b>' + esc(b.staff.name) + '</b><div class="meta">' + esc([b.staff.position, b.staff.group].filter(Boolean).join(' · ')) + '</div>' +
+      '<div class="stat"><div><span>ยกมาก่อนใช้ระบบ</span>' + fmtD(b.carry) + '</div><div><span>ลาในระบบ</span>' + fmtD(b.used) + '</div><div><span>รวมปีงบประมาณ ' + b.fyBE + ' (วัน)</span><span class="big">' + fmtD(b.total) + '</span></div><div><span>จำนวนครั้ง</span>' + b.count + '</div></div>' +
+      '<div class="meta">' + byTypeText(b.byType) + '</div>' +
+      (b.vac && (b.staff.type !== 'CONTRACT' || b.usedVac > 0) ? '<div class="info"><b>สิทธิลาพักผ่อน ' + b.fyBE + '</b>: สะสม ' + fmtD(b.vac.carry) + ' + สิทธิปีนี้ ' + fmtD(b.vac.quota) + ' = ' + fmtD(b.vac.total) + ' วัน · ใช้ไป ' + fmtD(b.vac.used) + ' · คงเหลือ <b>' + fmtD(b.vac.remaining) + '</b> วัน</div>' : '') +
+      (b.leaves.length ? b.leaves.map(x => leaveRow(x, false)).join('') : '<div class="empty">ยังไม่มีใบลาในปีงบประมาณนี้</div>') + '</div>';
+  } catch (e) { $('balOut').innerHTML = ''; fail(e); }
+};
+
+/* ---------- แอดมิน ---------- */
+$('btnAdm').onclick = async () => {
+  showErr('');
+  try {
+    const ok = await rpc('adminCheck', $('adm_pin').value);
+    if (!ok) return showErr('รหัสแอดมินไม่ถูกต้อง');
+    ADM = $('adm_pin').value; $('adm_pin').value = '';
+    $('admLogin').style.display = 'none'; $('admArea').style.display = '';
+    loadLedger(); loadStaffAdmin();
+  } catch (e) { fail(e); }
+};
+$('btnOut').onclick = () => { ADM = null; $('admArea').style.display = 'none'; $('admLogin').style.display = ''; $('ledOut').innerHTML = ''; };
+document.querySelectorAll('#admArea [data-s]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#admArea [data-s]').forEach(x => x.classList.toggle('on', x === b));
+  $('s-led').style.display = b.dataset.s === 'led' ? '' : 'none';
+  $('s-stf').style.display = b.dataset.s === 'stf' ? '' : 'none';
+});
+
+$('btnLed').onclick = loadLedger;
+$('l_type').onchange = () => { if (LEDGER) renderLedger(); };
+let LEDGER = null;
+async function loadLedger() {
+  showErr('');
+  $('ledOut').innerHTML = '<div class="empty">กำลังโหลด...</div>';
+  try { LEDGER = await rpc('adminLedger', ADM, $('l_fy').value); renderLedger(); }
+  catch (e) { $('ledOut').innerHTML = ''; fail(e); }
+}
+function renderLedger() {
+  const ft = $('l_type').value;
+  const rows = (LEDGER || []).filter(r => !ft || r.type === ft).sort((a, b) => TYPE_KEYS.indexOf(a.type || 'CONTRACT') - TYPE_KEYS.indexOf(b.type || 'CONTRACT'));
+  if (!rows.length) { $('ledOut').innerHTML = '<div class="card empty">ยังไม่มีข้อมูล</div>'; return; }
+  const tot = rows.reduce((s, r) => s + r.total, 0);
+  $('ledOut').innerHTML = '<div class="card scroll"><div class="meta">' + rows.length + ' คน · รวมวันลาทั้งหมด ' + fmtD(tot) + ' วัน</div><table><tr><th>ชื่อ</th><th>ประเภท</th><th>ตำแหน่ง</th><th class="n">ยกมา</th><th class="n">ลาในระบบ</th><th class="n">รวม (วัน)</th><th class="n">ครั้ง</th><th></th></tr>' +
+    rows.map((r, i) => '<tr><td>' + esc(r.name) + (r.active ? '' : ' <span class="badge CANCELLED">นำออกแล้ว</span>') + '</td><td>' + esc(typeTh(r.type)) + '</td><td>' + esc(r.position) + '</td><td class="n">' + fmtD(r.carry) +
+      '</td><td class="n">' + fmtD(r.used) + '</td><td class="n"><b>' + fmtD(r.total) + '</b></td><td class="n">' + r.count + '</td>' +
+      '<td class="n"><button class="btn ghost sm" onclick="toggleSub(' + i + ')">รายละเอียด</button></td></tr>' +
+      '<tr class="sub" id="sub' + i + '" style="display:none"><td colspan="8">' + '<div class="meta">' + byTypeText(r.byType) + (r.vac && (r.type !== 'CONTRACT' || r.usedVac > 0) ? ' (สิทธิรวม ' + fmtD(r.vac.total) + ' คงเหลือ ' + fmtD(r.vac.remaining) + ')' : '') + '</div>' + (r.leaves.length ? r.leaves.map(x => leaveRow(x, true)).join('') : '<div class="meta">ไม่มีใบลาในปีนี้</div>') + '</td></tr>').join('') +
+    '</table></div>';
+}
+function toggleSub(i) { const el = $('sub' + i); el.style.display = el.style.display === 'none' ? '' : 'none'; }
+async function setLv(id, st) {
+  if (st === 'CANCELLED' && !confirm('ยกเลิกใบลานี้ (จะไม่นับในยอดสะสม) ใช่หรือไม่?')) return;
+  try { await rpc('adminSetLeaveStatus', ADM, id, st); loadLedger(); } catch (e) { fail(e); }
+}
+
+/* จัดการรายชื่อ */
+let STAFF_ADM = [];
+async function loadStaffAdmin() {
+  try {
+    STAFF_ADM = await rpc('adminListStaff', ADM);
+    $('stfList').innerHTML = STAFF_ADM.length
+      ? '<table><tr><th>ชื่อ</th><th>ประเภท</th><th>ตำแหน่ง</th><th>กลุ่มงาน</th><th class="n">ยกมา</th><th></th></tr>' +
+        STAFF_ADM.map((s, i) => '<tr><td>' + esc(s.name) + (s.active === 'N' ? ' <span class="badge CANCELLED">นำออกแล้ว</span>' : '') + '</td><td>' + esc(typeTh(s.type)) + '</td><td>' + esc(s.position) + '</td><td>' + esc(s.group) +
+          '</td><td class="n">' + (s.carry ? fmtD(s.carry) + ' (ปี ' + esc(s.carryFY) + ')' : '-') + '</td><td class="n">' +
+          '<button class="btn ghost sm" onclick="editStaff(' + i + ')">แก้ไข</button> ' +
+          (s.active === 'N' ? '<button class="btn ghost sm" onclick="setStaff(\'' + s.id + '\',true)">นำกลับ</button>'
+                            : '<button class="btn bad sm" onclick="setStaff(\'' + s.id + '\',false)">นำออก</button>') + '</td></tr>').join('') + '</table>'
+      : '<div class="empty">ยังไม่มีรายชื่อ เพิ่มได้จากฟอร์มด้านบน</div>';
+    loadStaff();
+  } catch (e) { fail(e); }
+}
+function editStaff(i) {
+  const s = STAFF_ADM[i];
+  $('stfTitle').textContent = 'แก้ไขเจ้าหน้าที่'; $('s_id').value = s.id; $('s_type').value = s.type || 'CONTRACT';
+  $('s_name').value = s.name; $('s_pos').value = s.position; $('s_group').value = s.group; $('s_aff').value = s.affiliation;
+  $('s_hn').value = s.headName; $('s_hp').value = s.headPosition; $('s_hp2').value = s.headPosition2 || ''; $('s_carry').value = s.carry; $('s_cfy').value = s.carryFY; $('s_vc').value = s.vacCarry || ''; $('s_vu').value = s.vacUsed || ''; $('s_vfy').value = s.vacFY || ''; $('s_vq').value = s.vacQuota || ''; $('s_ps').value = s.priorSick || ''; $('s_pp').value = s.priorPersonal || ''; $('s_pm').value = s.priorMaternity || ''; $('s_pfy').value = s.priorFY || '';
+  window.scrollTo(0, 0);
+}
+function clearStaff() {
+  $('stfTitle').textContent = 'เพิ่มเจ้าหน้าที่'; ['s_id','s_name','s_pos','s_group','s_hn','s_hp','s_hp2','s_carry','s_cfy','s_vc','s_vu','s_vfy','s_vq','s_ps','s_pp','s_pm','s_pfy'].forEach(k => $(k).value = ''); $('s_type').value = 'CONTRACT';
+  $('s_aff').value = (DEF && DEF.orgName) || '';
+}
+$('btnClearStaff').onclick = clearStaff;
+$('btnSaveStaff').onclick = async () => {
+  showErr('');
+  try {
+    await rpc('adminSaveStaff', ADM, { id: $('s_id').value, type: $('s_type').value, name: $('s_name').value, position: $('s_pos').value, group: $('s_group').value,
+      affiliation: $('s_aff').value, headName: $('s_hn').value, headPosition: $('s_hp').value, headPosition2: $('s_hp2').value, carry: $('s_carry').value, carryFY: $('s_cfy').value,
+      vacCarry: $('s_vc').value, vacUsed: $('s_vu').value, vacFY: $('s_vfy').value, vacQuota: $('s_vq').value,
+      priorSick: $('s_ps').value, priorPersonal: $('s_pp').value, priorMaternity: $('s_pm').value, priorFY: $('s_pfy').value });
+    clearStaff(); loadStaffAdmin();
+  } catch (e) { fail(e); }
+};
+async function setStaff(id, flag) {
+  if (!flag && !confirm('นำชื่อนี้ออกจากรายการเลือก? (ประวัติการลายังอยู่ในสมุดคุม)')) return;
+  try { await rpc('adminSetStaffActive', ADM, id, flag); loadStaffAdmin(); } catch (e) { fail(e); }
+}
+setTimeout(clearStaff, 0);
+</script>
+</body>
+</html>
