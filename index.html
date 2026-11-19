@@ -6,64 +6,90 @@
 <title>สมุดคุมวันลา</title>
 <script src="config.js"></script>
 <script src="api.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f4f6fa; --card:#fff; --ink:#1d2433; --mute:#6b7488; --line:#dde2ec; --pri:#2457c5; --ok:#1c8a4b; --bad:#c43030; --warn:#b7791f; }
+  :root { --bg:#f6f9ec; --card:#fff; --ink:#1f2a14; --mute:#66714f; --line:#e1e8cc; --pri:#4d7c0f; --pri2:#65a30d; --soft:#eef6d6; --ok:#3f7d1f; --bad:#b42318; --badsoft:#fdecea; --warn:#a15c00; --r:16px; --shadow:0 1px 2px rgba(31,42,20,.06),0 8px 24px rgba(31,42,20,.06); }
   * { box-sizing: border-box; }
-  body { margin:0; font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--ink); font-size:16px; }
-  header { background:var(--pri); color:#fff; padding:14px 20px; }
-  header h1 { margin:0; font-size:20px; } header small { opacity:.85; }
-  main { max-width:960px; margin:0 auto; padding:16px; }
-  .tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
-  .tab { border:1px solid var(--line); background:#fff; padding:8px 16px; border-radius:20px; cursor:pointer; font:inherit; }
-  .tab.on { background:var(--pri); color:#fff; border-color:var(--pri); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:12px; }
-  h3 { margin:14px 0 2px; font-size:16px; color:var(--pri); } h3:first-child { margin-top:0; }
-  label { display:block; font-size:14px; color:var(--mute); margin:10px 0 4px; }
-  input, textarea, select { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; background:#fff; }
-  input[readonly] { background:#f0f2f7; }
-  .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  @media (max-width:640px){ .row { grid-template-columns:1fr; } }
-  button.btn { border:0; padding:9px 16px; border-radius:8px; font:inherit; cursor:pointer; background:var(--pri); color:#fff; }
-  button.btn.ghost { background:#fff; color:var(--pri); border:1px solid var(--pri); }
-  button.btn.bad { background:#fff; color:var(--bad); border:1px solid var(--bad); }
-  button.btn.sm { padding:4px 10px; font-size:14px; }
-  button.btn:disabled { opacity:.5; cursor:default; }
+  [hidden] { display:none !important; }
+  body { margin:0; font-family:'IBM Plex Sans Thai','Sarabun',system-ui,sans-serif; background:var(--bg); color:var(--ink); font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  button, input, textarea, select { font:inherit; color:inherit; }
+  header { background:linear-gradient(135deg,#365a0a 0%,#4d7c0f 55%,#7aae14 100%); color:#fff; padding:22px 20px 64px; }
+  .head-in { max-width:880px; margin:0 auto; display:flex; align-items:center; gap:14px; }
+  .head-in > div:nth-child(2) { flex:1; min-width:0; }
+  .logo { width:46px; height:46px; border-radius:14px; background:rgba(255,255,255,.16); display:grid; place-items:center; flex:none; }
+  header h1 { margin:0; font-size:21px; font-weight:700; letter-spacing:.2px; }
+  header p { margin:0; opacity:.85; font-size:14px; }
+  header small { opacity:.85; }
+  .who { margin-left:auto; display:flex; align-items:center; gap:10px; text-align:right; font-size:14px; }
+  .who #whoName { font-weight:600; line-height:1.3; }
+  .who button { border:1px solid rgba(255,255,255,.4); background:rgba(255,255,255,.12); color:#fff; border-radius:10px; padding:6px 10px; cursor:pointer; font-size:13px; white-space:nowrap; }
+  .who button:hover { background:rgba(255,255,255,.24); }
+  .sitenav { display:flex; gap:8px; max-width:880px; margin:14px auto 0; }
+  .sitenav a { color:#fff; text-decoration:none; padding:5px 14px; border-radius:16px; border:1px solid rgba(255,255,255,.5); font-size:14px; }
+  .sitenav a.on { background:#fff; color:var(--pri); border-color:#fff; font-weight:600; }
+  main { max-width:880px; margin:-44px auto 0; padding:0 16px 48px; }
+  .tabs { display:flex; gap:6px; background:var(--card); padding:6px; border-radius:14px; box-shadow:var(--shadow); margin-bottom:16px; flex-wrap:wrap; }
+  .tab { flex:1; border:0; background:transparent; padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:500; color:var(--mute); white-space:nowrap; }
+  .tab.on { background:var(--soft); color:var(--pri); font-weight:600; }
+  .card { background:var(--card); border-radius:var(--r); box-shadow:var(--shadow); padding:22px; margin-bottom:16px; }
+  .card .card { box-shadow:none; border:1px solid var(--line); padding:16px; }
+  h3 { margin:18px 0 8px; font-size:15px; font-weight:600; color:var(--pri); } h3:first-child { margin-top:0; }
+  label { display:block; font-size:14px; font-weight:500; color:var(--ink); margin:12px 0 6px; }
+  input, textarea, select { width:100%; min-width:0; padding:11px 13px; min-height:46px; border:1.5px solid var(--line); border-radius:12px; background:#fbfdf5; outline:none; transition:.15s; }
+  textarea { resize:vertical; }
+  input:focus, textarea:focus, select:focus { border-color:var(--pri2); background:#fff; box-shadow:0 0 0 4px rgba(101,163,13,.15); }
+  input[readonly] { background:#eef3e0; }
+  input[type=checkbox], input[type=radio] { width:auto; min-height:0; accent-color:var(--pri); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:640px){ .row { grid-template-columns:1fr; } .tab { font-size:13px; padding:10px 6px; } .head-in { flex-wrap:wrap; } .who { width:100%; justify-content:space-between; text-align:left; margin-left:0; flex-wrap:wrap; } }
+  button.btn { border:0; padding:12px 20px; min-height:46px; border-radius:12px; font-weight:600; cursor:pointer; background:var(--pri); color:#fff; transition:.15s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  button.btn:hover { background:#3b6209; }
+  button.btn.ghost { background:var(--soft); color:var(--pri); border:0; }
+  button.btn.ghost:hover { background:#e2efbc; }
+  button.btn.bad { background:var(--badsoft); color:var(--bad); border:0; }
+  button.btn.sm { padding:7px 12px; min-height:36px; font-size:14px; border-radius:10px; }
+  button.btn:disabled { opacity:.5; cursor:not-allowed; }
   .meta { color:var(--mute); font-size:14px; margin:4px 0; }
-  .hint { color:var(--mute); font-size:13px; margin:2px 0 0; }
-  .actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; align-items:center; }
-  .msg { padding:10px 14px; border-radius:8px; margin-bottom:12px; background:#fbe4e4; color:var(--bad); }
-  .okmsg { padding:14px; border-radius:8px; background:#dff4e7; color:#145c32; }
-  .info { padding:10px 14px; border-radius:8px; background:#eef3ff; color:#1b3d8f; margin-top:10px; }
-  .badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:13px; background:#eef1f8; }
-  .badge.CANCELLED { background:#fbe4e4; color:var(--bad); }
-  .badge.ACTIVE { background:#dff4e7; color:var(--ok); }
+  .hint { color:var(--mute); font-size:13px; margin:4px 0 0; }
+  .actions { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; align-items:center; }
+  .msg { padding:12px 14px; border-radius:12px; margin-bottom:12px; background:var(--badsoft); color:var(--bad); font-size:14px; }
+  .okmsg { padding:14px; border-radius:12px; background:#e6f6c8; color:#33540b; }
+  .info { padding:12px 14px; border-radius:12px; background:#f3fbc9; color:#3b5a0a; margin-top:10px; font-size:14px; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:99px; font-size:12px; font-weight:500; background:#eef3d6; color:#46506a; }
+  .badge.CANCELLED { background:var(--badsoft); color:var(--bad); }
+  .badge.ACTIVE { background:#e1f3c2; color:var(--ok); }
   table { width:100%; border-collapse:collapse; font-size:15px; }
-  th, td { padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th, td { padding:10px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
   th { color:var(--mute); font-weight:600; font-size:13px; }
   td.n, th.n { text-align:right; white-space:nowrap; }
   .scroll { overflow-x:auto; }
-  .sub { background:#f8f9fc; }
-  .lv { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:8px 0; border-bottom:1px dashed var(--line); }
-  .empty { text-align:center; color:var(--mute); padding:24px; }
+  .sub { background:#fafcf0; }
+  .lv { display:grid; grid-template-columns:64px 1fr auto; gap:14px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); }
+  .lv:last-child { border-bottom:0; }
+  .datebox { background:var(--soft); color:var(--pri); border-radius:12px; text-align:center; padding:8px 0; line-height:1.15; }
+  .datebox b { display:block; font-size:22px; }
+  .datebox small { font-size:12px; }
+  .lv .actions { margin:0; flex-direction:column; align-items:stretch; gap:6px; }
+  @media (max-width:640px){ .lv { grid-template-columns:56px 1fr; } .lv .actions { grid-column:1/-1; flex-direction:row; } .lv .actions .btn { flex:1; } }
+  .empty { text-align:center; color:var(--mute); padding:32px 16px; }
   .big { font-size:26px; font-weight:600; color:var(--pri); }
   .stat { display:flex; gap:24px; flex-wrap:wrap; margin:6px 0 10px; }
-  .who { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px; font-size:14px; }
-  .who button { background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:6px; padding:3px 10px; font:inherit; font-size:13px; cursor:pointer; }
-  .sitenav { display:flex; gap:8px; margin-top:10px; }
-  .sitenav a { color:#fff; text-decoration:none; padding:5px 14px; border-radius:16px; border:1px solid rgba(255,255,255,.5); font-size:14px; }
-  .sitenav a.on { background:#fff; color:var(--pri); border-color:#fff; font-weight:600; }
-  .login { max-width:420px; margin:24px auto; }
-  .splash { text-align:center; color:var(--mute); padding:40px; }
   .stat div span { display:block; font-size:13px; color:var(--mute); }
+  .login { max-width:440px; margin:0 auto 40px; }
+  .splash { text-align:center; color:var(--mute); padding:40px; background:var(--card); border-radius:var(--r); box-shadow:var(--shadow); }
 </style>
 </head>
 <body>
 <header>
-  <h1>สมุดคุมวันลา</h1>
-  <small id="org">สำนักงานยุติธรรมจังหวัดชลบุรี</small><small style="display:block">พนักงานราชการ · ลูกจ้างชั่วคราว · จ้างเหมาบริการ</small>
+  <div class="head-in">
+    <div class="logo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 11h16M9 16l2 2 4-4"/></svg></div>
+    <div>
+      <h1>สมุดคุมวันลา</h1>
+      <p><span id="org">สำนักงานยุติธรรมจังหวัดชลบุรี</span><br>พนักงานราชการ · ลูกจ้างชั่วคราว · จ้างเหมาบริการ</p>
+    </div>
+    <div class="who" id="who" style="display:none"><span id="whoName"></span><button id="btnPw">เปลี่ยนรหัสผ่าน</button><button id="btnLogout">ออกจากระบบ</button></div>
+  </div>
   <nav class="sitenav"><a class="on" href="./">📋 ระบบลา</a><a href="../carbook/">🚐 ระบบจองรถ</a></nav>
-  <div class="who" id="who" style="display:none"><span id="whoName"></span><button id="btnPw">เปลี่ยนรหัสผ่าน</button><button id="btnLogout">ออกจากระบบ</button></div>
 </header>
 <main>
   <div id="err"></div>
@@ -285,7 +311,7 @@ let B = null, DEF = null, SIGNERS = [], STAFFLIST = [], CUR = null;
 const isAdmin = () => !!(B && B.me && B.me.isAdmin);
 
 /* ---------- เข้าสู่ระบบ / สมัคร / ออก ---------- */
-function showView(v) { ['splash', 'loginView', 'appView'].forEach(k => $(k).style.display = k === v ? '' : 'none'); $('who').style.display = v === 'appView' ? '' : 'none'; }
+function showView(v) { ['splash', 'loginView', 'appView'].forEach(k => $(k).style.display = k === v ? '' : 'none'); $('who').style.display = v === 'appView' ? 'flex' : 'none'; }
 function toLogin(msg) { TOKEN = null; lsDel(LS_TOKEN); lsDel(LS_BOOT); B = null; showView('loginView'); if (msg) showErr(msg); }
 document.querySelectorAll('#loginTabs .tab').forEach(b => b.onclick = () => {
   showErr('');
@@ -502,7 +528,8 @@ function byTypeText(bt) {                                   // เช่น "ล
 /* mode: 'me' = เจ้าของใบลา (ยกเลิกได้ก่อนวันเริ่มลา) · 'adm' = แอดมิน (ยกเลิก/คืนสถานะ/ลบ) */
 function leaveRow(x, mode) {
   const canCancel = mode === 'adm' || (x.status !== 'CANCELLED' && x.startDate >= DEF.today);
-  return '<div class="lv"><div>' + esc(thDate(x.startDate)) + esc(partTh(x.startPart)) + ' – ' + esc(thDate(x.endDate)) + esc(partTh(x.endPart)) +
+  const dp = String(x.startDate || '').slice(0, 10).split('-');
+  return '<div class="lv"><div class="datebox"><b>' + (+dp[2] || '') + '</b><small>' + (MONTHS[dp[1] - 1] || '') + '</small></div><div>' + esc(thDate(x.startDate)) + esc(partTh(x.startPart)) + ' – ' + esc(thDate(x.endDate)) + esc(partTh(x.endPart)) +
     ' · <b>' + fmtD(x.days) + ' วัน</b> ' + (x.leaveType && x.leaveType !== 'GENERAL' ? '<span class="badge">' + esc(lvName(x.leaveType)) + '</span> ' : '') + '<span class="badge ' + esc(x.status) + '">' + (x.status === 'CANCELLED' ? 'ยกเลิก' : 'นับในยอด') + '</span>' +
     '<div class="meta">บันทึก ' + esc(thDate(x.createdAt)) + (x.delegateName ? ' · ผู้ปฏิบัติงานแทน: ' + esc(x.delegateName) : '') + (x.reason ? ' · เหตุผล: ' + esc(x.reason) : '') + (x.status === 'CANCELLED' && x.cancelledBy ? ' · ยกเลิกโดย ' + esc(x.cancelledBy) : '') + '</div></div>' +
     '<div class="actions" style="margin:0"><button class="btn ghost sm" onclick="printForm(\'' + x.id + '\')">พิมพ์ฟอร์ม</button>' +
