@@ -50,6 +50,9 @@
   .stat { display:flex; gap:24px; flex-wrap:wrap; margin:6px 0 10px; }
   .who { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px; font-size:14px; }
   .who button { background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:6px; padding:3px 10px; font:inherit; font-size:13px; cursor:pointer; }
+  .sitenav { display:flex; gap:8px; margin-top:10px; }
+  .sitenav a { color:#fff; text-decoration:none; padding:5px 14px; border-radius:16px; border:1px solid rgba(255,255,255,.5); font-size:14px; }
+  .sitenav a.on { background:#fff; color:var(--pri); border-color:#fff; font-weight:600; }
   .login { max-width:420px; margin:24px auto; }
   .splash { text-align:center; color:var(--mute); padding:40px; }
   .stat div span { display:block; font-size:13px; color:var(--mute); }
@@ -59,6 +62,7 @@
 <header>
   <h1>สมุดคุมวันลา</h1>
   <small id="org">สำนักงานยุติธรรมจังหวัดชลบุรี</small><small style="display:block">พนักงานราชการ · ลูกจ้างชั่วคราว · จ้างเหมาบริการ</small>
+  <nav class="sitenav"><a class="on" href="./">📋 ระบบลา</a><a href="../carbook/">🚐 ระบบจองรถ</a></nav>
   <div class="who" id="who" style="display:none"><span id="whoName"></span><button id="btnPw">เปลี่ยนรหัสผ่าน</button><button id="btnLogout">ออกจากระบบ</button></div>
 </header>
 <main>
